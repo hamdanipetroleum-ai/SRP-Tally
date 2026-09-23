@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Wellbore Schematic & Sucker Rod Tally Generator</title>
+    <style>
+        :root {
+            --primary-color: #0f172a;
+            --secondary-color: #2563eb;
+            --success-color: #16a34a;
+            --danger-color: #dc2626;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --text-color: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 15px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+        }
+
+        .header-title p {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            font-size: 0.92rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #475569;
+        }
+
+        .form-group input, .form-group select {
+            padding: 6px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 0.78rem;
+        }
+
+        table, th, td {
+            border: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8fafc;
+            padding: 6px;
+            text-align: left;
+            color: #334155;
+            font-size: 0.75rem;
+        }
+
+        td {
+            padding: 4px;
+        }
+
+        td input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 0.78rem;
+        }
+
+        .btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background-color: var(--success-color); }
+        .btn-danger { background-color: var(--danger-color); padding: 2px 6px; font-size: 0.7rem; }
+
+        .canvas-container {
+            width: 100%;
+            height: 980px;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            position: relative;
+            overflow: auto;
+        }
+
+        canvas {
+            display: block;
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>Sucker Rod Tally & Wellbore Schematic Visualizer</h1>
+            <p>Mechanical Completion & Artificial Lift Engineering</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-success" onclick="exportTallyCSV()">📥 Export Tally (CSV)</button>
+            <button class="btn" style="background:#7c3aed;" onclick="exportSchematicPNG()">🖼️ Export Diagram (PNG)</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- SEKTOR INPUT DATA (KIRI) -->
+        <div class="left-panel">
+            
+            <div class="card">
+                <h2>1. General Well Data</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Well Name</label>
+                        <input type="text" id="wellName" value="WELL-DEV-01">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Dev (deg)</label>
+                        <input type="number" id="maxDev" value="18.34" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Depth MD (ft)</label>
+                        <input type="number" id="tdMD" value="6570" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Depth TVD (ft)</label>
+                        <input type="number" id="tdTVD" value="6503" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>PBTD Depth (ft)</label>
+                        <input type="number" id="pbtdDepth" value="6383" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>TOC Depth (ft)</label>
+                        <input type="number" id="tocDepth" value="6018" onchange="renderWellSchema()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>2. Casing Strings (Telescoping)</h2>
+                <table id="casingTable">
+                    <thead>
+                        <tr>
+                            <th>Size / Spec</th>
+                            <th>Shoe MD (ft)</th>
+                            <th style="width:30px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" class="csg-spec" value="20&quot; CASING"></td>
+                            <td><input type="number" class="csg-depth" value="67" onchange="renderWellSchema()"></td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="csg-spec" value="13-3/8&quot;, 68 PPF"></td>
+                            <td><input type="number" class="csg-depth" value="543" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="csg-spec" value="9-5/8&quot;, 68 PPF"></td>
+                            <td><input type="number" class="csg-depth" value="4325" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="csg-spec" value="7&quot;, 26 PPF"></td>
+                            <td><input type="number" class="csg-depth" value="6550" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn" style="margin-top:6px;" onclick="addCasingRow()">+ Casing String</button>
+            </div>
+
+            <div class="card">
+                <h2>3. Tubing, Pump & Tailpiece Assembly</h2>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Tubing String Description</label>
+                        <input type="text" id="tubingDesc" value="16 jts of 2-7/8&quot; HSL-Apex 13Cr + 158 jts of 2-7/8&quot; EUE">
+                    </div>
+                    <div class="form-group">
+                        <label>Pump Depth (ft)</label>
+                        <input type="number" id="pumpDepth" value="5405" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>Gas Anchor Depth (ft)</label>
+                        <input type="number" id="gasAnchorDepth" value="5473" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>Screen Pipe Depth (ft)</label>
+                        <input type="number" id="screenPipeDepth" value="5486" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>Bull Plug Depth (ft)</label>
+                        <input type="number" id="bullPlugDepth" value="5500" onchange="renderWellSchema()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>4. Sucker Rod Tally & Roller Guides</h2>
+                <table id="rodTable">
+                    <thead>
+                        <tr>
+                            <th>Rod Spec / Size</th>
+                            <th>Length (ft)</th>
+                            <th>Roller Guides (MD ft)</th>
+                            <th style="width:30px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" class="rod-size" value="204 jts 3/4&quot; Sucker Rod"></td>
+                            <td><input type="number" class="rod-len" value="5405" onchange="renderWellSchema()"></td>
+                            <td><input type="text" class="rod-rg" value="2000, 3500, 4200" onchange="renderWellSchema()"></td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn" style="margin-top:6px;" onclick="addRodRow()">+ Rod Section</button>
+            </div>
+
+            <div class="card">
+                <h2>5. Plug & Perforation / Test Intervals</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Packer Depth (ft)</label>
+                        <input type="number" id="packerDepth" value="5640" onchange="renderWellSchema()">
+                    </div>
+                    <div class="form-group">
+                        <label>EZBP Depth (ft)</label>
+                        <input type="number" id="ezbpDepth" value="6028" onchange="renderWellSchema()">
+                    </div>
+                </div>
+                <h3 style="font-size:0.8rem; margin:10px 0 4px 0;">Intervals (DST / Perforations)</h3>
+                <table id="intervalTable">
+                    <thead>
+                        <tr>
+                            <th>Label Interval</th>
+                            <th>Top (ft)</th>
+                            <th>Btm (ft)</th>
+                            <th style="width:30px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" class="int-label" value="Post Fract: 5548'-5556' MD"></td>
+                            <td><input type="number" class="int-top" value="5548" onchange="renderWellSchema()"></td>
+                            <td><input type="number" class="int-btm" value="5556" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="int-label" value="DST#3: 5612'-5632' MD"></td>
+                            <td><input type="number" class="int-top" value="5612" onchange="renderWellSchema()"></td>
+                            <td><input type="number" class="int-btm" value="5632" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="int-label" value="DST#2: 5678'-5692' MD"></td>
+                            <td><input type="number" class="int-top" value="5678" onchange="renderWellSchema()"></td>
+                            <td><input type="number" class="int-btm" value="5692" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="int-label" value="DST#1: 6038'-6050' MD"></td>
+                            <td><input type="number" class="int-top" value="6038" onchange="renderWellSchema()"></td>
+                            <td><input type="number" class="int-btm" value="6050" onchange="renderWellSchema()"></td>
+                            <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn" style="margin-top:6px;" onclick="addIntervalRow()">+ Interval Zone</button>
+            </div>
+
+        </div>
+
+        <!-- SEKTOR CANVAS DIAGRAM (KANAN) -->
+        <div class="right-panel">
+            <div class="canvas-container">
+                <canvas id="wellCanvas" width="850" height="1200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wellCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function addCasingRow() {
+            const tbody = document.getElementById('casingTable').querySelector('tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" class="csg-spec" value="7&quot;, 26 PPF"></td>
+                <td><input type="number" class="csg-depth" value="6000" onchange="renderWellSchema()"></td>
+                <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+            renderWellSchema();
+        }
+
+        function addRodRow() {
+            const tbody = document.getElementById('rodTable').querySelector('tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" class="rod-size" value="3/4&quot; Rod"></td>
+                <td><input type="number" class="rod-len" value="1000" onchange="renderWellSchema()"></td>
+                <td><input type="text" class="rod-rg" value="" onchange="renderWellSchema()"></td>
+                <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+            renderWellSchema();
+        }
+
+        function addIntervalRow() {
+            const tbody = document.getElementById('intervalTable').querySelector('tbody');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" class="int-label" value="Perforated Zone"></td>
+                <td><input type="number" class="int-top" value="5000" onchange="renderWellSchema()"></td>
+                <td><input type="number" class="int-btm" value="5050" onchange="renderWellSchema()"></td>
+                <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
+            `;
+            tbody.appendChild(row);
+            renderWellSchema();
+        }
+
+        function removeRow(btn) {
+            btn.closest('tr').remove();
+            renderWellSchema();
+        }
+
+        function renderWellSchema() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const wellName = document.getElementById('wellName').value;
+            const maxDev = document.getElementById('maxDev').value;
+            const tdMD = parseFloat(document.getElementById('tdMD').value) || 6570;
+            const tdTVD = parseFloat(document.getElementById('tdTVD').value) || 6503;
+            const pbtdDepth = parseFloat(document.getElementById('pbtdDepth').value) || 6383;
+            const tocDepth = parseFloat(document.getElementById('tocDepth').value) || 6018;
+
+            const pumpDepth = parseFloat(document.getElementById('pumpDepth').value) || 5405;
+            const gasAnchorDepth = parseFloat(document.getElementById('gasAnchorDepth').value) || 5473;
+            const screenPipeDepth = parseFloat(document.getElementById('screenPipeDepth').value) || 5486;
+            const bullPlugDepth = parseFloat(document.getElementById('bullPlugDepth').value) || 5500;
+            const packerDepth = parseFloat(document.getElementById('packerDepth').value) || 5640;
+            const ezbpDepth = parseFloat(document.getElementById('ezbpDepth').value) || 6028;
+
+            let casings = [];
+            document.querySelectorAll('#casingTable tbody tr').forEach(r => {
+                let spec = r.querySelector('.csg-spec').value;
+                let depth = parseFloat(r.querySelector('.csg-depth').value) || 0;
+                casings.push({ spec, depth });
+            });
+            casings.sort((a,b) => a.depth - b.depth);
+
+            let intervals = [];
+            document.querySelectorAll('#intervalTable tbody tr').forEach(r => {
+                let label = r.querySelector('.int-label').value;
+                let top = parseFloat(r.querySelector('.int-top').value) || 0;
+                let btm = parseFloat(r.querySelector('.int-btm').value) || 0;
+                intervals.push({ label, top, btm });
+            });
+
+            let rollerGuides = [];
+            let totalRodLen = 0;
+            document.querySelectorAll('#rodTable tbody tr').forEach(r => {
+                let len = parseFloat(r.querySelector('.rod-len').value) || 0;
+                let rgStr = r.querySelector('.rod-rg').value;
+                if (rgStr.trim() !== '') {
+                    rgStr.split(',').forEach(g => {
+                        let val = parseFloat(g.trim());
+                        if (!isNaN(val)) rollerGuides.push(val);
+                    });
+                }
+                totalRodLen += len;
+            });
+
+            function getCoord(md) {
+                const kickOffMD = 4300;
+                const devAngle = 18.34 * Math.PI / 180;
+                const scaleY = 0.16;
+                const scaleX = scaleY;
+                const centerX = 400;
+                const topY = 60;
+
+                if (md <= kickOffMD) {
+                    return { x: centerX, y: topY + md * scaleY, angle: 0 };
+                } else {
+                    let devMD = md - kickOffMD;
+                    let dx = devMD * Math.sin(devAngle);
+                    let dy = devMD * Math.cos(devAngle);
+                    return { x: centerX + dx * scaleX, y: topY + (kickOffMD + dy) * scaleY, angle: devAngle };
+                }
+            }
+
+            // Surface Hatch
+            let surfacePt = getCoord(0);
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(surfacePt.x - 70, surfacePt.y - 15, 140, 15);
+            ctx.strokeStyle = '#0f172a';
+            ctx.strokeRect(surfacePt.x - 70, surfacePt.y - 15, 140, 15);
+
+            // Casings & Cement
+            const csgWidths = [110, 90, 70, 50];
+            casings.forEach((csg, idx) => {
+                let w = csgWidths[idx] || (50 - idx * 5);
+                let pStart = getCoord(idx === 0 ? 0 : casings[idx-1].depth);
+                let pEnd = getCoord(csg.depth);
+
+                ctx.fillStyle = '#cbd5e1';
+                ctx.beginPath();
+                ctx.moveTo(pStart.x - w/2 - 6, pStart.y);
+                ctx.lineTo(pEnd.x - w/2 - 6, pEnd.y);
+                ctx.lineTo(pEnd.x - w/2, pEnd.y);
+                ctx.lineTo(pStart.x - w/2, pStart.y);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(pStart.x + w/2 + 6, pStart.y);
+                ctx.lineTo(pEnd.x + w/2 + 6, pEnd.y);
+                ctx.lineTo(pEnd.x + w/2, pEnd.y);
+                ctx.lineTo(pStart.x + w/2, pStart.y);
+                ctx.fill();
+
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#0f172a';
+                [-w/2, w/2].forEach(side => {
+                    ctx.beginPath();
+                    ctx.moveTo(pStart.x + side, pStart.y);
+                    ctx.lineTo(pEnd.x + side, pEnd.y);
+                    ctx.stroke();
+                });
+
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.moveTo(pEnd.x - w/2, pEnd.y);
+                ctx.lineTo(pEnd.x - w/2 - 12, pEnd.y + 12);
+                ctx.lineTo(pEnd.x - w/2, pEnd.y + 12);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(pEnd.x + w/2, pEnd.y);
+                ctx.lineTo(pEnd.x + w/2 + 12, pEnd.y + 12);
+                ctx.lineTo(pEnd.x + w/2, pEnd.y + 12);
+                ctx.fill();
+
+                drawLeftArrow(pEnd.x - w/2 - 15, pEnd.y, `${csg.spec}\nTO ${csg.depth}' MD`);
+            });
+
+            // TOC & EZBP
+            if (tocDepth > 0) {
+                let tocPt = getCoord(tocDepth);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fillText(`TOC at ${tocDepth}' MD`, tocPt.x + 35, tocPt.y);
+            }
+
+            if (ezbpDepth > 0) {
+                let ezbpPt = getCoord(ezbpDepth);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(ezbpPt.x - 22, ezbpPt.y - 8, 44, 16);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.fillText('EZBP', ezbpPt.x - 12, ezbpPt.y + 3);
+                
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '11px sans-serif';
+                ctx.fillText(`EZBP at ${ezbpDepth}' MD`, ezbpPt.x + 35, ezbpPt.y + 12);
+            }
+
+            // Intervals
+            intervals.forEach(interval => {
+                let pTop = getCoord(interval.top);
+                ctx.strokeStyle = '#16a34a';
+                ctx.lineWidth = 2;
+                for (let yMD = interval.top; yMD <= interval.btm; yMD += 4) {
+                    let pt = getCoord(yMD);
+                    ctx.beginPath();
+                    ctx.moveTo(pt.x - 28, pt.y);
+                    ctx.lineTo(pt.x - 22, pt.y);
+                    ctx.moveTo(pt.x + 22, pt.y);
+                    ctx.lineTo(pt.x + 28, pt.y);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#16a34a';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText(interval.label, pTop.x - 300, pTop.y + 5);
+            });
+
+            // Packer
+            if (packerDepth > 0) {
+                let packPt = getCoord(packerDepth);
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(packPt.x - 24, packPt.y - 8, 8, 16);
+                ctx.fillRect(packPt.x + 16, packPt.y - 8, 8, 16);
+                drawRightArrow(packPt.x + 25, packPt.y, `VTA Packer at ${packerDepth}' MD`, '#2563eb');
+            }
+
+            // Tubing String
+            let pTubStart = getCoord(0);
+            let pTubEnd = getCoord(pumpDepth);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#2563eb';
+            [-10, 10].forEach(side => {
+                ctx.beginPath();
+                ctx.moveTo(pTubStart.x + side, pTubStart.y);
+                ctx.lineTo(pTubEnd.x + side, pTubEnd.y);
+                ctx.stroke();
+            });
+            drawRightArrow(pTubStart.x + 20, pTubStart.y + 100, document.getElementById('tubingDesc').value);
+
+            // Sucker Rod & Roller Guides
+            let pRodEnd = getCoord(totalRodLen);
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.moveTo(pTubStart.x, pTubStart.y);
+            ctx.lineTo(pRodEnd.x, pRodEnd.y);
+            ctx.stroke();
+
+            rollerGuides.forEach(rgMD => {
+                let rgPt = getCoord(rgMD);
+                ctx.fillStyle = '#7c3aed';
+                ctx.beginPath();
+                ctx.arc(rgPt.x, rgPt.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Pump, Gas Anchor, Screen Pipe, Bull Plug
+            let pPump = getCoord(pumpDepth);
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(pPump.x - 8, pPump.y, 16, 25);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.fillText('PUMP', pPump.x - 13, pPump.y + 15);
+            drawRightArrow(pPump.x + 20, pPump.y + 10, `Insert Pump at ${pumpDepth}' MD`, '#2563eb');
+
+            let pGA = getCoord(gasAnchorDepth);
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(pPump.x, pPump.y + 25);
+            ctx.lineTo(pGA.x, pGA.y);
+            ctx.stroke();
+            drawRightArrow(pGA.x + 20, pGA.y, `Gas Anchor ${gasAnchorDepth}' MD`, '#2563eb');
+
+            let pScreen = getCoord(screenPipeDepth);
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1;
+            ctx.fillRect(pScreen.x - 6, pGA.y, 12, pScreen.y - pGA.y);
+            ctx.strokeRect(pScreen.x - 6, pGA.y, 12, pScreen.y - pGA.y);
+            drawRightArrow(pScreen.x + 20, pScreen.y, `Screen Pipe ${screenPipeDepth}' MD`, '#2563eb');
+
+            let pBull = getCoord(bullPlugDepth);
+            ctx.fillStyle = '#dc2626';
+            ctx.beginPath();
+            ctx.moveTo(pBull.x - 8, pScreen.y);
+            ctx.lineTo(pBull.x + 8, pScreen.y);
+            ctx.lineTo(pBull.x, pBull.y + 8);
+            ctx.closePath();
+            ctx.fill();
+            drawRightArrow(pBull.x + 20, pBull.y, `Bull Plug at ${bullPlugDepth}' MD`, '#2563eb');
+
+            // Footer Depths
+            let pPBTD = getCoord(pbtdDepth);
+            ctx.strokeStyle = '#0f172a';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(pPBTD.x - 25, pPBTD.y);
+            ctx.lineTo(pPBTD.x + 25, pPBTD.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(`PBTD at ${pbtdDepth}' MD`, pPBTD.x + 35, pPBTD.y + 4);
+
+            let pTD = getCoord(tdMD);
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`TOTAL DEPTH : ${tdMD}' MD / ${tdTVD}' TVD`, pTD.x - 120, pTD.y + 40);
+            ctx.fillText(`Max. Dev. ${maxDev} deg.`, pTD.x + 35, pTD.y - 10);
+        }
+
+        function drawLeftArrow(x, y, text) {
+            ctx.fillStyle = '#0f172a';
+            ctx.font = '10px sans-serif';
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 15, y - 5);
+            ctx.lineTo(x - 15, y + 5);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 40, y);
+            ctx.stroke();
+
+            let lines = text.split('\n');
+            lines.forEach((line, i) => {
+                ctx.fillText(line, x - 150, y - 2 + (i * 12));
+            });
+        }
+
+        function drawRightArrow(x, y, text, color = '#0f172a') {
+            ctx.fillStyle = color;
+            ctx.strokeStyle = color;
+            ctx.font = 'bold 11px sans-serif';
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 20, y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + 6, y - 4);
+            ctx.lineTo(x + 6, y + 4);
+            ctx.fill();
+
+            ctx.fillText(text, x + 25, y + 4);
+        }
+
+        function exportTallyCSV() {
+            const wellName = document.getElementById('wellName').value;
+            let csv = `WELLBORE SCHEMATIC & TALLY REPORT\nWell Name,${wellName}\n\n`;
+            csv += `Section,Spec/Size,Length/Depth MD (ft)\n`;
+
+            document.querySelectorAll('#casingTable tbody tr').forEach(r => {
+                csv += `Casing,${r.querySelector('.csg-spec').value},${r.querySelector('.csg-depth').value}\n`;
+            });
+
+            document.querySelectorAll('#rodTable tbody tr').forEach(r => {
+                csv += `Sucker Rod,${r.querySelector('.rod-size').value},${r.querySelector('.rod-len').value}\n`;
+            });
+
+            const link = document.createElement("a");
+            link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+            link.download = `Tally_${wellName}.csv`;
+            link.click();
+        }
+
+        function exportSchematicPNG() {
+            const wellName = document.getElementById('wellName').value;
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = `Wellbore_Schematic_${wellName}.png`;
+            link.click();
+        }
+
+        window.onload = () => {
+            renderWellSchema();
+        };
+    </script>
+</body>
+</html>
