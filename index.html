@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Wellbore Schematic & Sucker Rod Tally Generator</title>
+    <title>Precision Wellbore Schematic & Sucker Rod Visualizer</title>
     <style>
         :root {
             --primary-color: #0f172a;
@@ -41,7 +41,7 @@
         }
 
         .header-title h1 {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
         }
 
         .header-title p {
@@ -180,8 +180,8 @@
 
     <header>
         <div class="header-title">
-            <h1>Sucker Rod Tally & Wellbore Schematic Visualizer</h1>
-            <p>Mechanical Completion & Artificial Lift Engineering</p>
+            <h1>Precision Wellbore Schematic Visualizer</h1>
+            <p>High-Precision Mechanical Completion Diagram</p>
         </div>
         <div class="header-actions">
             <button class="btn btn-success" onclick="exportTallyCSV()">📥 Export Tally (CSV)</button>
@@ -190,7 +190,7 @@
     </header>
 
     <div class="container">
-        <!-- SEKTOR INPUT DATA (KIRI) -->
+        <!-- FORM INPUT DATA -->
         <div class="left-panel">
             
             <div class="card">
@@ -264,7 +264,7 @@
                 <div class="form-grid">
                     <div class="form-group" style="grid-column: span 2;">
                         <label>Tubing String Description</label>
-                        <input type="text" id="tubingDesc" value="16 jts of 2-7/8&quot; HSL-Apex 13Cr + 158 jts of 2-7/8&quot; EUE">
+                        <input type="text" id="tubingDesc" value="16 jts 2-7/8&quot; HSL-Apex + 158 jts 2-7/8&quot; EUE">
                     </div>
                     <div class="form-group">
                         <label>Pump Depth (ft)</label>
@@ -346,7 +346,7 @@
                         <tr>
                             <td><input type="text" class="int-label" value="DST#2: 5678'-5692' MD"></td>
                             <td><input type="number" class="int-top" value="5678" onchange="renderWellSchema()"></td>
-                            <td><input type="number" class="int-btm" value="5692" onchange="renderWellSchema()"></td>
+                            <td><input type="number" class="int-btm" value="5678" onchange="renderWellSchema()"></td>
                             <td><button class="btn btn-danger" onclick="removeRow(this)">X</button></td>
                         </tr>
                         <tr>
@@ -362,7 +362,7 @@
 
         </div>
 
-        <!-- SEKTOR CANVAS DIAGRAM (KANAN) -->
+        <!-- SEKTOR CANVAS DIAGRAM -->
         <div class="right-panel">
             <div class="canvas-container">
                 <canvas id="wellCanvas" width="850" height="1200"></canvas>
@@ -464,6 +464,7 @@
                 totalRodLen += len;
             });
 
+            // FUNGSI PERSAMAAN KONTINU TRAJEKTORI SUMUR
             function getCoord(md) {
                 const kickOffMD = 4300;
                 const devAngle = 18.34 * Math.PI / 180;
@@ -482,64 +483,93 @@
                 }
             }
 
-            // Surface Hatch
+            // 1. SURFACE CELLAR
             let surfacePt = getCoord(0);
             ctx.fillStyle = '#64748b';
-            ctx.fillRect(surfacePt.x - 70, surfacePt.y - 15, 140, 15);
+            ctx.fillRect(surfacePt.x - 75, surfacePt.y - 12, 150, 12);
             ctx.strokeStyle = '#0f172a';
-            ctx.strokeRect(surfacePt.x - 70, surfacePt.y - 15, 140, 15);
+            ctx.strokeRect(surfacePt.x - 75, surfacePt.y - 12, 150, 12);
 
-            // Casings & Cement
-            const csgWidths = [110, 90, 70, 50];
+            // 2. CASING STRINGS (PRESISI KONSENTRIS & SEMEN)
+            const csgWidths = [120, 96, 72, 48]; // Radius Casing Presisi
             casings.forEach((csg, idx) => {
-                let w = csgWidths[idx] || (50 - idx * 5);
-                let pStart = getCoord(idx === 0 ? 0 : casings[idx-1].depth);
-                let pEnd = getCoord(csg.depth);
+                let w = csgWidths[idx] || (48 - idx * 4);
+                let topMD = idx === 0 ? 0 : casings[idx-1].depth;
+                let btmMD = csg.depth;
 
+                // Polygon Semen di Luar Dinding Casing
                 ctx.fillStyle = '#cbd5e1';
-                ctx.beginPath();
-                ctx.moveTo(pStart.x - w/2 - 6, pStart.y);
-                ctx.lineTo(pEnd.x - w/2 - 6, pEnd.y);
-                ctx.lineTo(pEnd.x - w/2, pEnd.y);
-                ctx.lineTo(pStart.x - w/2, pStart.y);
-                ctx.fill();
+                for (let m = topMD; m <= btmMD; m += 20) {
+                    let pt1 = getCoord(m);
+                    let pt2 = getCoord(Math.min(m + 20, btmMD));
+                    let cementW = 8;
 
-                ctx.beginPath();
-                ctx.moveTo(pStart.x + w/2 + 6, pStart.y);
-                ctx.lineTo(pEnd.x + w/2 + 6, pEnd.y);
-                ctx.lineTo(pEnd.x + w/2, pEnd.y);
-                ctx.lineTo(pStart.x + w/2, pStart.y);
-                ctx.fill();
-
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#0f172a';
-                [-w/2, w/2].forEach(side => {
+                    // Sisi Kiri
                     ctx.beginPath();
-                    ctx.moveTo(pStart.x + side, pStart.y);
-                    ctx.lineTo(pEnd.x + side, pEnd.y);
-                    ctx.stroke();
-                });
+                    ctx.moveTo(pt1.x - w/2 - cementW, pt1.y);
+                    ctx.lineTo(pt2.x - w/2 - cementW, pt2.y);
+                    ctx.lineTo(pt2.x - w/2, pt2.y);
+                    ctx.lineTo(pt1.x - w/2, pt1.y);
+                    ctx.fill();
 
+                    // Sisi Kanan
+                    ctx.beginPath();
+                    ctx.moveTo(pt1.x + w/2 + cementW, pt1.y);
+                    ctx.lineTo(pt2.x + w/2 + cementW, pt2.y);
+                    ctx.lineTo(pt2.x + w/2, pt2.y);
+                    ctx.lineTo(pt1.x + w/2, pt1.y);
+                    ctx.fill();
+                }
+
+                // Dinding Casing (Garis Hitam Tegas)
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#0f172a';
+                
+                // Dinding Kiri
+                ctx.beginPath();
+                for (let m = topMD; m <= btmMD; m += 20) {
+                    let pt = getCoord(m);
+                    let x = pt.x - w/2 * Math.cos(pt.angle);
+                    let y = pt.y + w/2 * Math.sin(pt.angle);
+                    if (m === topMD) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Dinding Kanan
+                ctx.beginPath();
+                for (let m = topMD; m <= btmMD; m += 20) {
+                    let pt = getCoord(m);
+                    let x = pt.x + w/2 * Math.cos(pt.angle);
+                    let y = pt.y - w/2 * Math.sin(pt.angle);
+                    if (m === topMD) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Casing Shoe (Sepatu Casing Segitiga Presisi)
+                let pShoe = getCoord(btmMD);
                 ctx.fillStyle = '#0f172a';
+                
                 ctx.beginPath();
-                ctx.moveTo(pEnd.x - w/2, pEnd.y);
-                ctx.lineTo(pEnd.x - w/2 - 12, pEnd.y + 12);
-                ctx.lineTo(pEnd.x - w/2, pEnd.y + 12);
+                ctx.moveTo(pShoe.x - w/2, pShoe.y);
+                ctx.lineTo(pShoe.x - w/2 - 10, pShoe.y + 10);
+                ctx.lineTo(pShoe.x - w/2, pShoe.y + 10);
                 ctx.fill();
 
                 ctx.beginPath();
-                ctx.moveTo(pEnd.x + w/2, pEnd.y);
-                ctx.lineTo(pEnd.x + w/2 + 12, pEnd.y + 12);
-                ctx.lineTo(pEnd.x + w/2, pEnd.y + 12);
+                ctx.moveTo(pShoe.x + w/2, pShoe.y);
+                ctx.lineTo(pShoe.x + w/2 + 10, pShoe.y + 10);
+                ctx.lineTo(pShoe.x + w/2, pShoe.y + 10);
                 ctx.fill();
 
-                drawLeftArrow(pEnd.x - w/2 - 15, pEnd.y, `${csg.spec}\nTO ${csg.depth}' MD`);
+                // Label Kiri Casing
+                drawLeftArrow(pShoe.x - w/2 - 12, pShoe.y, `${csg.spec}\nTO ${csg.depth}' MD`);
             });
 
-            // TOC & EZBP
+            // 3. TOP OF CEMENT (TOC) & EZBP
             if (tocDepth > 0) {
                 let tocPt = getCoord(tocDepth);
-                ctx.fillStyle = '#94a3b8';
+                ctx.fillStyle = '#64748b';
+                ctx.font = '11px sans-serif';
                 ctx.fillText(`TOC at ${tocDepth}' MD`, tocPt.x + 35, tocPt.y);
             }
 
@@ -556,55 +586,71 @@
                 ctx.fillText(`EZBP at ${ezbpDepth}' MD`, ezbpPt.x + 35, ezbpPt.y + 12);
             }
 
-            // Intervals
+            // 4. INTERVAL PERFORASI (DST) PAS DI DINDING CASING 7"
             intervals.forEach(interval => {
                 let pTop = getCoord(interval.top);
                 ctx.strokeStyle = '#16a34a';
                 ctx.lineWidth = 2;
+
+                const csgProdRadius = 24; // Half of 7" casing visual width
                 for (let yMD = interval.top; yMD <= interval.btm; yMD += 4) {
                     let pt = getCoord(yMD);
                     ctx.beginPath();
-                    ctx.moveTo(pt.x - 28, pt.y);
-                    ctx.lineTo(pt.x - 22, pt.y);
-                    ctx.moveTo(pt.x + 22, pt.y);
-                    ctx.lineTo(pt.x + 28, pt.y);
+                    // Slit Kiri & Kanan
+                    ctx.moveTo(pt.x - csgProdRadius - 5, pt.y);
+                    ctx.lineTo(pt.x - csgProdRadius + 3, pt.y);
+                    ctx.moveTo(pt.x + csgProdRadius - 3, pt.y);
+                    ctx.lineTo(pt.x + csgProdRadius + 5, pt.y);
                     ctx.stroke();
                 }
 
                 ctx.fillStyle = '#16a34a';
                 ctx.font = 'bold 11px sans-serif';
-                ctx.fillText(interval.label, pTop.x - 300, pTop.y + 5);
+                ctx.fillText(interval.label, pTop.x - 300, pTop.y + 4);
             });
 
-            // Packer
+            // 5. PACKER PRESISI
             if (packerDepth > 0) {
                 let packPt = getCoord(packerDepth);
                 ctx.fillStyle = '#0f172a';
-                ctx.fillRect(packPt.x - 24, packPt.y - 8, 8, 16);
-                ctx.fillRect(packPt.x + 16, packPt.y - 8, 8, 16);
+                ctx.fillRect(packPt.x - 23, packPt.y - 8, 10, 16);
+                ctx.fillRect(packPt.x + 13, packPt.y - 8, 10, 16);
                 drawRightArrow(packPt.x + 25, packPt.y, `VTA Packer at ${packerDepth}' MD`, '#2563eb');
             }
 
-            // Tubing String
-            let pTubStart = getCoord(0);
-            let pTubEnd = getCoord(pumpDepth);
+            // 6. TUBING STRING (PRESISI TERKONEKSI KE POMPA)
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#2563eb';
-            [-10, 10].forEach(side => {
-                ctx.beginPath();
-                ctx.moveTo(pTubStart.x + side, pTubStart.y);
-                ctx.lineTo(pTubEnd.x + side, pTubEnd.y);
-                ctx.stroke();
-            });
-            drawRightArrow(pTubStart.x + 20, pTubStart.y + 100, document.getElementById('tubingDesc').value);
+            const tubRadius = 7; // Radius Tubing 2-7/8"
 
-            // Sucker Rod & Roller Guides
-            let pRodEnd = getCoord(totalRodLen);
+            ctx.beginPath();
+            for (let m = 0; m <= pumpDepth; m += 20) {
+                let pt = getCoord(m);
+                if (m === 0) ctx.moveTo(pt.x - tubRadius, pt.y);
+                else ctx.lineTo(pt.x - tubRadius, pt.y);
+            }
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (let m = 0; m <= pumpDepth; m += 20) {
+                let pt = getCoord(m);
+                if (m === 0) ctx.moveTo(pt.x + tubRadius, pt.y);
+                else ctx.lineTo(pt.x + tubRadius, pt.y);
+            }
+            ctx.stroke();
+
+            let pTubMid = getCoord(1500);
+            drawRightArrow(pTubMid.x + 15, pTubMid.y, document.getElementById('tubingDesc').value);
+
+            // 7. SUCKER ROD & ROLLER GUIDES
             ctx.lineWidth = 2;
             ctx.strokeStyle = '#f59e0b';
             ctx.beginPath();
-            ctx.moveTo(pTubStart.x, pTubStart.y);
-            ctx.lineTo(pRodEnd.x, pRodEnd.y);
+            for (let m = 0; m <= totalRodLen; m += 20) {
+                let pt = getCoord(m);
+                if (m === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            }
             ctx.stroke();
 
             rollerGuides.forEach(rgMD => {
@@ -615,49 +661,52 @@
                 ctx.fill();
             });
 
-            // Pump, Gas Anchor, Screen Pipe, Bull Plug
+            // 8. INSERT PUMP & TAILPIECE ASSEMBLY
             let pPump = getCoord(pumpDepth);
             ctx.fillStyle = '#dc2626';
-            ctx.fillRect(pPump.x - 8, pPump.y, 16, 25);
+            ctx.fillRect(pPump.x - 9, pPump.y, 18, 24);
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 9px sans-serif';
-            ctx.fillText('PUMP', pPump.x - 13, pPump.y + 15);
-            drawRightArrow(pPump.x + 20, pPump.y + 10, `Insert Pump at ${pumpDepth}' MD`, '#2563eb');
+            ctx.font = 'bold 8px sans-serif';
+            ctx.fillText('PUMP', pPump.x - 12, pPump.y + 15);
+            drawRightArrow(pPump.x + 18, pPump.y + 10, `Insert Pump at ${pumpDepth}' MD`, '#2563eb');
 
+            // Gas Anchor
             let pGA = getCoord(gasAnchorDepth);
             ctx.strokeStyle = '#0f172a';
             ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.moveTo(pPump.x, pPump.y + 25);
+            ctx.moveTo(pPump.x, pPump.y + 24);
             ctx.lineTo(pGA.x, pGA.y);
             ctx.stroke();
-            drawRightArrow(pGA.x + 20, pGA.y, `Gas Anchor ${gasAnchorDepth}' MD`, '#2563eb');
+            drawRightArrow(pGA.x + 18, pGA.y, `Gas Anchor ${gasAnchorDepth}' MD`, '#2563eb');
 
+            // Screen Pipe
             let pScreen = getCoord(screenPipeDepth);
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#0f172a';
-            ctx.lineWidth = 1;
-            ctx.fillRect(pScreen.x - 6, pGA.y, 12, pScreen.y - pGA.y);
-            ctx.strokeRect(pScreen.x - 6, pGA.y, 12, pScreen.y - pGA.y);
-            drawRightArrow(pScreen.x + 20, pScreen.y, `Screen Pipe ${screenPipeDepth}' MD`, '#2563eb');
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(pScreen.x - 5, pGA.y, 10, pScreen.y - pGA.y);
+            ctx.strokeRect(pScreen.x - 5, pGA.y, 10, pScreen.y - pGA.y);
+            drawRightArrow(pScreen.x + 18, pScreen.y, `Screen Pipe ${screenPipeDepth}' MD`, '#2563eb');
 
+            // Bull Plug
             let pBull = getCoord(bullPlugDepth);
             ctx.fillStyle = '#dc2626';
             ctx.beginPath();
-            ctx.moveTo(pBull.x - 8, pScreen.y);
-            ctx.lineTo(pBull.x + 8, pScreen.y);
+            ctx.moveTo(pBull.x - 7, pScreen.y);
+            ctx.lineTo(pBull.x + 7, pScreen.y);
             ctx.lineTo(pBull.x, pBull.y + 8);
             ctx.closePath();
             ctx.fill();
-            drawRightArrow(pBull.x + 20, pBull.y, `Bull Plug at ${bullPlugDepth}' MD`, '#2563eb');
+            drawRightArrow(pBull.x + 18, pBull.y, `Bull Plug at ${bullPlugDepth}' MD`, '#2563eb');
 
-            // Footer Depths
+            // 9. FOOTER DEPTHS
             let pPBTD = getCoord(pbtdDepth);
             ctx.strokeStyle = '#0f172a';
             ctx.setLineDash([4, 4]);
             ctx.beginPath();
-            ctx.moveTo(pPBTD.x - 25, pPBTD.y);
-            ctx.lineTo(pPBTD.x + 25, pPBTD.y);
+            ctx.moveTo(pPBTD.x - 24, pPBTD.y);
+            ctx.lineTo(pPBTD.x + 24, pPBTD.y);
             ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = '#0f172a';
@@ -672,32 +721,36 @@
 
         function drawLeftArrow(x, y, text) {
             ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1;
             ctx.font = '10px sans-serif';
+
             ctx.beginPath();
             ctx.moveTo(x, y);
-            ctx.lineTo(x - 15, y - 5);
-            ctx.lineTo(x - 15, y + 5);
+            ctx.lineTo(x - 12, y - 4);
+            ctx.lineTo(x - 12, y + 4);
             ctx.fill();
 
             ctx.beginPath();
             ctx.moveTo(x, y);
-            ctx.lineTo(x - 40, y);
+            ctx.lineTo(x - 30, y);
             ctx.stroke();
 
             let lines = text.split('\n');
             lines.forEach((line, i) => {
-                ctx.fillText(line, x - 150, y - 2 + (i * 12));
+                ctx.fillText(line, x - 140, y - 2 + (i * 12));
             });
         }
 
         function drawRightArrow(x, y, text, color = '#0f172a') {
             ctx.fillStyle = color;
             ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
             ctx.font = 'bold 11px sans-serif';
 
             ctx.beginPath();
             ctx.moveTo(x, y);
-            ctx.lineTo(x + 20, y);
+            ctx.lineTo(x + 18, y);
             ctx.stroke();
 
             ctx.beginPath();
@@ -706,7 +759,7 @@
             ctx.lineTo(x + 6, y + 4);
             ctx.fill();
 
-            ctx.fillText(text, x + 25, y + 4);
+            ctx.fillText(text, x + 22, y + 4);
         }
 
         function exportTallyCSV() {
